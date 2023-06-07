@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO" >
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+		</Console>		
+		<RollingFile name="RollingFile">             
+            <!-- <FileName>/SW/qcm_esg/log/gesg_logger.log</FileName> -->
+            <!-- <FilePattern>D:/gesg_logger.%d{yyyy-MM-dd-HH-mm}</FilePattern>  -->
+            <FileName>D:/Log/gesg_logger.log</FileName>
+            <FilePattern>D:/Log/gesg_logger.%d{yyyy-MM-dd}</FilePattern>
+			<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>            
+			<Policies>
+                <TimeBasedTriggeringPolicy interval = "1" modulate = "true"/>
+            </Policies>            
+        </RollingFile>
+	</Appenders>
+	<Loggers>
+		<Root level="info">
+			<AppenderRef ref="Console"/>
+			<AppenderRef ref="RollingFile"/>
+		</Root>	
+	</Loggers>	
+</Configuration>	
+ 
+ 		<!--
+        <Logger name="org.hibernate.SQL" level="DEBUG"> 
+            <AppenderRef ref="STDOUT"/> 
+        </Logger>
+        
+        <Logger name="org.hibernate.SQL" level="INFO"> 
+            <AppenderRef ref="RollingFile"/> 
+        </Logger>
+         --> 
+        <!--  <Logger name="org.hibernate.type.descriptor.sql" level="TRACE"> 
+            <AppenderRef ref="RollingFile"/> 
+        </Logger> -->	
+
+	
+	<!-- 
+	<configuration status="DEBUG">
+ 
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd hh:mm:ss} %5p [%c] %m%n"/>
+        </Console>
+        
+        <RollingFile name ="RollingFile">
+            <FileName>C:/log/mylog.txt</FileName>
+            <FilePattern>C:/log/%d{yyyy-MM-dd-hh-mm}/mylog.zip</FilePattern>
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss} %5p [%c] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval = "1" modulate = "true"/>
+            </Policies>
+        </RollingFile>
+        
+        <RollingFile name ="RollingFileError">
+            <FileName>C:/log/mylog_error.txt</FileName>
+            <FilePattern>C:/log/%d{yyyy-MM-dd-hh-mm}/mylog_error.zip</FilePattern>
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss} %5p [%c] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval = "1" modulate = "true"/>
+            </Policies>
+        </RollingFile>
+        
+    </Appenders>
+    
+    <loggers>
+        <root level="debug" additivity="true">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="RollingFileError" level = "ERROR"/>
+        </root>
+    </loggers>
+     -->
+	
+	<!-- 
+ 	<Appenders> 
+        <File name="FILE" fileName="D:/Log/logger2.log"> 
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/> 
+        </File> 
+    </Appenders> 
+    <Loggers> 
+        <Logger name="org.hibernate.SQL" level="DEBUG"> 
+            <AppenderRef ref="FILE"/> 
+        </Logger> 
+        <Logger name="org.hibernate.type.descriptor.sql" level="TRACE"> 
+            <AppenderRef ref="FILE"/> 
+        </Logger> 
+        <Root level="info"> 
+            <AppenderRef ref="FILE"/> 
+        </Root> 
+    </Loggers>
+     --> 
+

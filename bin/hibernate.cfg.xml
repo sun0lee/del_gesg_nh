@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+    "-//Hibernate/Hibernate Configuration DTD//EN"
+    "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+  <session-factory>
+
+    <property name="hibernate.connection.driver_class">oracle.jdbc.driver.OracleDriver</property>
+    <property name="hibernate.connection.url">jdbc:oracle:thin:@localhost:1521/ORCL</property>
+    <property name="hibernate.connection.username">GESG</property>
+    <property name="hibernate.connection.password">gesg1234</property>
+    <property name="hibernate.dialect">org.hibernate.dialect.OracleDialect</property>
+    
+    <property name="hibernate.jdbc.batch_size">50</property>
+    <property name="hibernate.order_inserts">true</property>
+    <property name="hibernate.order_updates">true</property>
+    
+    <property name="hibernate.c3p0.min_size">10</property>
+    <property name="hibernate.c3p0.max_size">50</property>    
+    <property name="hibernate.c3p0.max_statements">50</property>        
+            
+    <property name="hibernate.generate_statistics">true</property>    
+    <!-- <property name="hibernate.current_session_context_class">thread</property>  -->    
+    <property name="hibernate.physical_naming_strategy">com.gof.util.PhysicalNamingStrategyImpl</property>    
+    
+    
+    <mapping class="com.gof.entity.CoCdMst"/>
+    <mapping class="com.gof.entity.CoEsgMeta"/>
+    <mapping class="com.gof.entity.CoJobInfo"/>
+    <mapping class="com.gof.entity.CoJobList"/>        
+            
+    <mapping class="com.gof.entity.IrCurve"/>
+    <mapping class="com.gof.entity.IrCurveFwd"/>
+    <mapping class="com.gof.entity.IrCurveSceBiz"/>
+    <mapping class="com.gof.entity.IrCurveSpot"/>
+    <mapping class="com.gof.entity.IrCurveSpotWeek"/>
+    <mapping class="com.gof.entity.IrCurveYtm"/>
+    <mapping class="com.gof.entity.IrCurveYtmUsr"/>
+    <mapping class="com.gof.entity.IrCurveYtmUsrHis"/>
+    
+    <mapping class="com.gof.entity.IrDcntRate"/>
+    <mapping class="com.gof.entity.IrDcntRateBiz"/>
+    <mapping class="com.gof.entity.IrDcntRateBu"/>
+    <mapping class="com.gof.entity.IrDcntRateUsr"/>
+    <mapping class="com.gof.entity.IrDcntSceDetBiz"/>
+    <mapping class="com.gof.entity.IrDcntSceStoBiz"/>
+    <mapping class="com.gof.entity.IrDcntSceStoGnr"/>
+    
+    <mapping class="com.gof.entity.IrParamAfnsBiz"/>
+    <mapping class="com.gof.entity.IrParamAfnsCalc"/>
+    <mapping class="com.gof.entity.IrParamAfnsUsr"/>
+    <mapping class="com.gof.entity.IrParamHwBiz"/>
+    <mapping class="com.gof.entity.IrParamHwCalc"/>
+    <mapping class="com.gof.entity.IrParamHwRnd"/>
+    <mapping class="com.gof.entity.IrParamHwUsr"/>    
+    <mapping class="com.gof.entity.IrParamModel"/>
+    <mapping class="com.gof.entity.IrParamModelBiz"/>
+    <mapping class="com.gof.entity.IrParamModelCalc"/>
+    <mapping class="com.gof.entity.IrParamModelRnd"/>
+    <mapping class="com.gof.entity.IrParamModelUsr"/>    
+    <mapping class="com.gof.entity.IrParamSw"/>
+    <mapping class="com.gof.entity.IrParamSwUsr"/>
+    
+    <mapping class="com.gof.entity.IrSprdAfnsBiz"/>
+    <mapping class="com.gof.entity.IrSprdAfnsCalc"/>
+    <mapping class="com.gof.entity.IrSprdAfnsUsr"/>
+    <mapping class="com.gof.entity.IrSprdCrd"/>
+    <mapping class="com.gof.entity.IrSprdCurve"/>
+    <mapping class="com.gof.entity.IrSprdLp"/>
+    <mapping class="com.gof.entity.IrSprdLpBiz"/>
+    <mapping class="com.gof.entity.IrSprdLpUsr"/>
+    
+    <mapping class="com.gof.entity.IrValidParamHw"/>
+    <mapping class="com.gof.entity.IrValidRnd"/>
+    <mapping class="com.gof.entity.IrValidSceSto"/>
+    <mapping class="com.gof.entity.IrQvalSce"/>    
+    
+    <mapping class="com.gof.entity.IrVolSwpnUsr"/>
+    <mapping class="com.gof.entity.IrVolSwpn"/>
+    
+    
+    <mapping class="com.gof.entity.MvCorr"/>
+    <mapping class="com.gof.entity.MvVol"/>
+        
+    <mapping class="com.gof.entity.FxRateHis"/>
+    
+    <mapping class="com.gof.entity.RcCorpTmUsr"/>
+    <mapping class="com.gof.entity.RcCorpTm"/>
+    <mapping class="com.gof.entity.RcCorpPd"/>
+    <mapping class="com.gof.entity.RcCorpPdBiz"/>    
+    
+    <mapping class="com.gof.entity.StdAsst"/>
+    <mapping class="com.gof.entity.StdAsstIrSceSto"/>
+    <mapping class="com.gof.entity.StdAsstPrc"/>
+    
+  </session-factory>
+</hibernate-configuration>
+
+		
