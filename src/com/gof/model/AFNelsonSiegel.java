@@ -26,6 +26,8 @@ import org.apache.commons.math3.optim.univariate.BrentOptimizer;
 import org.apache.commons.math3.optim.univariate.SearchInterval;
 import org.apache.commons.math3.optim.univariate.UnivariateObjectiveFunction;
 import org.apache.commons.math3.optim.univariate.UnivariateOptimizer;
+import org.apache.commons.math3.random.GaussianRandomGenerator;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.ejml.data.DMatrixRMaj;
@@ -90,6 +92,12 @@ public class AFNelsonSiegel extends IrModel {
 	protected double        kappaS;
 	protected double        kappaC;	
 	protected double        epsilon;
+	
+	// 23.06.05 add for 내부모형 stoScen 
+	protected int           scenNum = 1000 ;
+	protected int           randomGenType = 1;
+	protected int           seedNum = 470 ;
+	protected double[][]    randNum; // [number of factors][this.scenNum]
 	
 	protected List<IrDcntSceDetBiz> rsltList = new ArrayList<IrDcntSceDetBiz>();
 	
@@ -165,6 +173,39 @@ public class AFNelsonSiegel extends IrModel {
 		this.setIrmodelAttributes();
 	}
 	
+
+	public AFNelsonSiegel(LocalDate baseDate, String mode, double[] inputParas, List<IrCurveSpot> iRateHisList, List<IrCurveSpot> iRateBaseList, boolean isRealNumber, char cmpdType, double dt, double initSigma, int dayCountBasis,
+            double ltfrL, double ltfrA, int ltfrT, double liqPrem, double term, double minLambda, double maxLambda, int nf, int prjYear, double accuracy, int itrMax, double confInterval, double epsilon, int randomGenType, int seedNum) 
+	{
+		this.baseDate      = baseDate;		
+		this.mode          = mode;
+		this.inputParas    = inputParas;		
+		this.setTermStructureHis(iRateHisList, iRateBaseList);
+		this.isRealNumber  = isRealNumber;
+		this.cmpdType      = cmpdType;		
+		this.dt            = dt;	
+		this.initSigma     = initSigma;
+		this.dayCountBasis = dayCountBasis;
+		this.ltfrL         = ltfrL;
+		this.ltfrA         = ltfrA;
+		this.ltfrT         = ltfrT;
+		this.liqPrem       = liqPrem;
+		this.term          = term;
+		this.minLambda     = minLambda;
+		this.maxLambda     = maxLambda;
+		this.nf            = nf;
+		this.prjYear       = prjYear;
+		this.accuracy      = accuracy;
+		this.itrMax        = itrMax;
+		this.confInterval  = confInterval;
+		this.epsilon       = epsilon;
+		this.setIrmodelAttributes();
+		
+		// 23.06.05 add for 내부모형 stoScen
+		this.randomGenType = randomGenType;
+		this.seedNum = seedNum;
+		this.randomNumberGaussian(3); // 난수 생성 (nf = 3)
+	}
 
 	//TODO:
 	public void setTermStructureHis(List<IrCurveSpot> iRateHisList, List<IrCurveSpot> iRateBaseList) {		
@@ -353,15 +394,16 @@ public class AFNelsonSiegel extends IrModel {
         
 		if(this.IntShock != null) {			
 			
-			for(int i=0; i<this.IntShock.numCols(); i++) {
-				for(int j=0; j<this.IntShock.numRows(); j++) {
+			for(int i=0; i<this.IntShock.numCols(); i++) {     // scen 
+				for(int j=0; j<this.IntShock.numRows(); j++) { // tenor
 					
 					IrSprdAfnsCalc shock = new IrSprdAfnsCalc();
 					shock.setBaseYymm(dateToString(this.baseDate).substring(0,6));
 					shock.setIrModelId(this.mode);
 					shock.setIrCurveId(this.irCurveId);				
 //					shock.setIrCurveSceNo(this.IntShockName[i]);
-					shock.setIrCurveSceNo(Integer.valueOf(this.IntShockName[i]));
+//					shock.setIrCurveSceNo(Integer.valueOf(this.IntShockName[i]));
+					shock.setIrCurveSceNo(Integer.valueOf(i+1));
 					shock.setMatCd(String.format("%s%04d", 'M', (int) round(this.tenor[j] * MONTH_IN_YEAR, 0)));
 					//shock.setMatCd(String.valueOf((int) round(this.tenor[j] * MONTH_IN_YEAR, 0) ));
 					shock.setShkSprdCont(this.IntShock.get(j,i));
@@ -420,6 +462,25 @@ public class AFNelsonSiegel extends IrModel {
 		afnsShockGenerating();	
 	}
 	
+	// 4. afns 충격시나리오 (1000개) 생성_TVOG 산출용  
+	public void genAfnsStoShock(List<IrParamAfnsCalc> inOptParam, List<IrParamAfnsCalc> inOptLsc) {
+		
+		
+//		// 최적화된 모수 읽어온 값 담기 
+		this.optParas = inOptParam.stream()
+			    .mapToDouble(param -> param.getParamVal())
+			    .toArray();        
+        
+        // L,S,C 담기 
+        this.optLSC = inOptLsc.stream()
+        	    .mapToDouble(param -> param.getParamVal())
+        	    .toArray();
+		
+        
+		// To set this.IntShock
+        afnsShockStoGenerating();	
+	}
+
 	
 	
 	public List<IrDcntSceDetBiz> getAfnsResultList() {
@@ -827,7 +888,79 @@ public class AFNelsonSiegel extends IrModel {
 		this.IntShockName       = new String[] {"1", "2", "3", "4", "5", "6"};
 	}		
 	
+	private void afnsShockStoGenerating() {
+		
+		double       Lambda     = this.optParas[0];
+		SimpleMatrix Theta      = new SimpleMatrix(vecToMat(new double[] {this.optParas[1], this.optParas[2], this.optParas[3]}));
+		SimpleMatrix Kappa      = new SimpleMatrix(toDiagMatrix(this.optParas[4], this.optParas[5], this.optParas[6]));
+		SimpleMatrix Sigma      = new SimpleMatrix(toLowerTriangular3(new double[] {this.optParas[7], this.optParas[8], this.optParas[9], this.optParas[10], this.optParas[11], this.optParas[12]}));
+		SimpleMatrix X0         = new SimpleMatrix(vecToMat(new double[] {this.optLSC[0], this.optLSC[1], this.optLSC[2]}));		
+		this.epsilon            = this.optParas[13];
+		
+		// AFNS factor loading matrix based on LLP weight
+		double[]     tenorLLP   = new double[(int) (Math.round(this.tenor[this.tenor.length-1]))];
+		for(int i=0; i<tenorLLP.length; i++) tenorLLP[i] = i+1;
+//		SimpleMatrix factorLLP  = new SimpleMatrix(factorLoad(Lambda, tenorLLP, true));
 
+		
+		// Declare M, N and Calculate NTN | eKappa ~ Kappa^-1 x (I-exp(-Kappa)) x Sigma  |  N ~ W.mat x M  |  NTN ~ t(N) x N
+		SimpleMatrix eKappa     = new SimpleMatrix(toDiagMatrix(Math.exp(-Kappa.get(0,0)), Math.exp(-Kappa.get(1,1)), Math.exp(-Kappa.get(2,2))));
+//		SimpleMatrix IminusK    = new SimpleMatrix(toIdentityMatrix(this.nf)).minus(eKappa);
+//		SimpleMatrix M          = Kappa.invert().mult(IminusK).mult(Sigma);		
+		
+        ////////////////////////////////////////////////////////////////////////////////	
+		
+		double[][] mTemp = new double[this.nf][this.nf];		
+		for(int i=0; i<mTemp.length; i++) {
+			for(int j=0; j<mTemp[i].length; j++) {
+				mTemp[i][j]     = (1.0 - eKappa.get(i,i) * eKappa.get(j,j)) / (Kappa.get(i,i) + Kappa.get(j,j));								
+			}
+		}	
+		SimpleMatrix M1         = Sigma.mult(Sigma.transpose()).elementMult(new SimpleMatrix(mTemp));
+		
+		CholeskyDecomposition_F64<DMatrixRMaj> chol = DecompositionFactory_DDRM.chol(true);
+		
+		if(!chol.decompose(M1.getDDRM())) {
+			log.error("Cholesky Decomposition is failed in AFNS Process!");
+			System.exit(0);
+		}		
+	////// chol(v)
+		SimpleMatrix M          = new SimpleMatrix(chol.getT(M1.getDDRM()));  //for IAIS Modified after 2017		
+////		for(int i=0; i<M.numRows(); i++) log.info("M matrix: {}, {}, {}", M.get(i,0),  M.get(i,1),  M.get(i,2));		
+
+        ////////////////////////////////////////////////////////////////////////////////		
+		
+	////// H ; CoefInt
+		SimpleMatrix CoefInt    = new SimpleMatrix(factorLoad(Lambda, this.tenor, true));
+		
+		// 23.06.07 평균회귀 특성을 이용해서 1000개 시나리오 스프레드 생성 (위의 로직은 결정론 시나리오생성 작업과 중복됨.)
+		////// mu = (I -e-Kt) (θ - X0) ; MeanR 
+			SimpleMatrix Mu         = new SimpleMatrix(toIdentityMatrix(this.nf)).minus(eKappa).mult(Theta.minus(X0)); 
+			             Mu         = new SimpleMatrix(toDiagMatrix(Mu.get(0,0), Mu.get(1,0), Mu.get(2,0))); // 대각행렬로 변환 
+			SimpleMatrix aa         = new SimpleMatrix(3, scenNum);
+			             aa.fill(1.0);
+			             Mu         = Mu.mult(aa);	// 3*1000 행렬로 변환 			
+			
+			SimpleMatrix rand  = new SimpleMatrix(this.randNum) ;
+			SimpleMatrix stoShock = CoefInt.mult((M.mult(rand)).plus(Mu));
+			
+//			엑셀에서 오차항의 처리 
+//			double prob = 0.282511297341565;  // 엑셀은 이 확률을 상수로 썼는데 의미가 뭘까?? => 사용자의 실수인 듯. 
+//			double err = this.epsilon / 100  * new NormalDistribution().inverseCumulativeProbability(prob);
+			
+			// 오차항의 난수 생성. [tenor.lengh][scen#]
+			this.randomNumberGaussian(this.tenor.length);
+			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon) ;
+
+			stoShock = stoShock.plus(err);
+			
+
+			// 여기에 충격 스프레드 결과 담기 
+			this.IntShock           = new SimpleMatrix(stoShock);
+		
+//		this.IntShockName       = new String[] {"1", "2", "3", "4", "5", "6"};
+	}		
+	
 	protected List<IrDcntSceDetBiz> applySmithWilsonInterpoloation(double ltfr, double liqPrem, String type) {
 
 		List<IrDcntSceDetBiz> curveList = new ArrayList<IrDcntSceDetBiz>();
@@ -1002,5 +1135,135 @@ public class AFNelsonSiegel extends IrModel {
 		}
 		return paramList;
 	}
+	
+	// X ~ Z(0,1) 표준 정규분포를 따르는 난수를 반환
+		private void randomNumberGaussian(int len) {
+			
+//			int len = 3 ; // ;this.optLSC.length ;
+			switch(this.randomGenType) {
+				
+				case 1:  mersenneTwisterAdj(this.seedNum, len);
+						 break;
+						
+				case 2:  mersenneTwisterFair(this.seedNum, len ); 
+//				         mersenneTwister(Integer.valueOf(dateToString(this.baseDate.minusDays(0))));
+						 break;
+						 
+				case 3:  mersenneTwister(this.seedNum, len); 
+				 		 break;					 
+						
+				case 4:  randLinearCongruential(this.seedNum, len );
+						 break;
+				
+				default: mersenneTwisterAdj(this.seedNum, len );
+						 break;
+			}		
+			        
+			log.info("{}, {}, {}, {}, {}, {}", this.randNum[0][0], this.randNum[0][this.scenNum-1], this.randNum[1][0], this.randNum[len-1][0], this.randNum[len-1][this.scenNum-1]);
+		}	
+
+		
+		protected void mersenneTwisterAdj(int seed, int len) {		
+			
+		    double JB_TEST_TOL = 5.0;
+		    double RUNS_TEST_TOL = 0.04; 
+		    
+			GaussianRandomGenerator grg = new GaussianRandomGenerator(new MersenneTwister(Long.valueOf(seed)));		
+			this.randNum = new double[len][this.scenNum];
+					
+
+			for(int i=0; i<len; i++) {
+				for(int j=0; j<this.scenNum; j++) {
+					this.randNum[i][j] = grg.nextNormalizedDouble();
+				}
+			}
+			for(int i=0; i<len; i++) {
+				this.randNum[i] = vecToZeroMean(this.randNum[i]);
+//				this.randNum[i] = vecToUnitVariance(this.randNum[i]);
+			}
+			
+			for(int k=0; k<1; k++) {
+				//TODO:JB Test and re-generation
+				for(int i=0; i<len; i++) {
+					if(vecJBtest(this.randNum[i]) > JB_TEST_TOL) {
+//						log.info("JB {}th, i={}th, {}", k+1, i, vecJBtest(this.randNum[i]));				
+						for(int j=0; j<len; j++) {
+							this.randNum[i][j] = grg.nextNormalizedDouble();
+						}
+				        this.randNum[i] = vecToZeroMean(this.randNum[i]);
+					}
+				}
+				
+				//Runs Test and re-generation
+				double[][] randNumT = matTranspose(this.randNum);		
+				for(int j=0; j<this.scenNum; j++) {		
+					if(runsTest(randNumT[j]) < RUNS_TEST_TOL) {
+//						log.info("Runs {}th, j={}th, {}", k+1, j+1, runsTest(randNumT[j]));
+						for(int i=0; i<len; i++) {
+							this.randNum[i][j] = grg.nextNormalizedDouble();
+						}
+					}
+				}			
+//				for(int i=0; i<this.prjMonth; i++) this.randNum[i] = vecToZeroMean(this.randNum[i]);  //too many adjusting to zero mean results in bad random set 
+			}
+			for(int i=0; i<len; i++) {			
+				this.randNum[i] = vecToZeroMean(this.randNum[i]);
+//				this.randNum[i] = vecToUnitVariance(this.randNum[i]);			
+			}
+			
+
+		}	
+			
+
+		protected void mersenneTwisterFair(int seed , int len) {		
+					
+			GaussianRandomGenerator grg = new GaussianRandomGenerator(new MersenneTwister(Long.valueOf(seed)));
+			
+			int scenNumGen = (this.scenNum + 1) / 2;
+			this.randNum   = new double[len][this.scenNum];
+			
+			for(int i=0; i<len; i++) {
+				for(int j=0; j<scenNumGen; j++) {			
+					
+					double random        = grg.nextNormalizedDouble();				
+					this.randNum[i][j*2] = +random;
+					if(this.scenNum > j*2 + 1) this.randNum[i][j*2 + 1] = -random;
+				}
+			}			
+		}
+		
+		
+		protected void mersenneTwister(int seed, int len) {		
+			;
+			GaussianRandomGenerator grg = new GaussianRandomGenerator(new MersenneTwister(Long.valueOf(seed)));		
+			this.randNum   = new double[len][this.scenNum];
+			
+			for(int i=0; i<len; i++) {
+				for(int j=0; j<this.scenNum; j++) {
+					this.randNum[i][j] = grg.nextNormalizedDouble();
+				}
+			}	
+			
+			for(int i=0; i<len; i++) this.randNum[i] = vecToZeroMean(this.randNum[i]);
+			
+		}	
+		
+		protected void randLinearCongruential(int seed, int len) {		
+
+//			double[] randNum = randLinearCongruentDbl((long) Math.pow(2, 31), 65539, 0, seed, this.prjMonth * this.scenNum);              // for cross-check with R or Excel (considering integer calculation accuracy)
+			double[] randNum = randLinearCongruentDbl((long) Math.pow(2, 31), 1103515245, 12345, 800000, len * this.scenNum);   // for more accurate method
+			
+			double[] randNumInvCdf = randNumInvCdf(randNum);
+//			log.info("Rands' Mean: {}, Rands' Sd: {}", vectMean(randNumInvCdf), vectSd(randNumInvCdf));
+			
+			this.randNum = new double[len][this.scenNum];
+			
+			for(int i=0; i<len; i++) {
+				for(int j=0; j<this.scenNum; j++) {
+					this.randNum[i][j] = randNumInvCdf[this.scenNum*i + j];
+				}				
+			}
+		}
+		
 	
 }

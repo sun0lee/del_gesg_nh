@@ -39,6 +39,7 @@ public enum EJob {
 	, ESG710 ("")
 	, ESG720 ("")
 	, ESG730 ("")
+	, ESG740 ("")
 
 	, ESG810 ("Set Transition Matrix")
 	, ESG820 ("Corporate PD from Transition Matrix")

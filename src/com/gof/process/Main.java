@@ -175,6 +175,7 @@ public class Main {
 		job710(); // afns 초기 모수 setting
 		job720(); // afns 모수 최적화
 		job730(); // afns 시나리오 생성 
+		job740();  
 // ****************************************************************** RC Job                              ********************************
 
 		job810();		// Job 810: Set Transition Matrix
@@ -306,6 +307,7 @@ public class Main {
 //		jobList.add("710");
 //		jobList.add("720");
 //		jobList.add("730");
+		jobList.add("740");
 //		jobList.add("260");
 //		jobList.add("261");
 //		jobList.add("270");
@@ -314,7 +316,7 @@ public class Main {
 //		jobList.add("310");
 //		jobList.add("320");
 //		jobList.add("330");
-		jobList.add("340");
+//		jobList.add("340");
 //		jobList.add("350");
 //		jobList.add("360");
 //		jobList.add("370");
@@ -2321,6 +2323,128 @@ public class Main {
 			}
 		}
 
+
+	private static void job740() {
+			if(jobList.contains("740")) {
+				session.beginTransaction();
+				CoJobInfo jobLog = startJogLog(EJob.ESG740);			
+	
+				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS_STO"    ).trim().toUpperCase();						
+				String upperirModelId  = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS"    ).trim().toUpperCase();
+				int    weekDay         = Integer.valueOf((String) argInDBMap.getOrDefault("AFNS_WEEK_DAY"        , "5"));
+				double confInterval    = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_CONF_INTERVAL"   , "0.995"));
+				
+				double dt              = 1.0 / 52.0;   //weekly only
+				int    kalmanItrMax    = Integer.valueOf((String) argInDBMap.getOrDefault("AFNS_KALMAN_ITR_MAX"  , "100"));			
+				double sigmaInit       = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_SIGMA_INIT"      , "0.05"));
+				double epsilonInit     = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_EPSILON_INIT"    , "0.001"));			
+	
+				
+				List<IrParamModel> modelMst = IrParamModelDao.getParamModelList(upperirModelId); // AFNS
+				Map<String, IrParamModel> modelMstMap = modelMst.stream().collect(Collectors.toMap(IrParamModel::getIrCurveId, Function.identity()));
+				log.info("IrParamModel: {}", modelMstMap.toString());			
+				
+				try {
+					for(Map.Entry<String, IrCurve> irCrv : irCurveMap.entrySet()) {
+						if(!irCurveSwMap.containsKey(irCrv.getKey())) {
+							log.warn("No Ir Curve Data [{}] in Smith-Wilson Map for [{}]", irCrv.getKey(), bssd);
+							continue;
+						}					
+						
+						if(!modelMstMap.containsKey(irCrv.getKey())) {
+							log.warn("No Model Attribute of [{}] for [{}] in [{}] Table", irModelId, irCrv.getKey(), Process.toPhysicalName(IrParamModel.class.getSimpleName()));
+							continue;
+						}
+						
+						log.info("AFNS Shock Spread (Cont) for [{}({}, {})]", irCrv.getKey(), irCrv.getValue().getIrCurveNm(), irCrv.getValue().getCurCd());
+						
+						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
+	//					tenorList.remove("M0048"); tenorList.remove("M0084"); tenorList.remove("M0180");  //FOR CHECK w/ FSS
+	//					log.info("{}", tenorList);
+						//TODO:
+	//					tenorList.remove("M0180");
+						
+						log.info("TenorList in [{}]: ID: [{}], llp: [{}], matCd: {}", jobLog.getJobId(), irCrv.getKey(), irCurveSwMap.get(irCrv.getKey()).getLlp(), tenorList);
+						if(tenorList.isEmpty()) {
+							log.warn("No Spot Rate Data [ID: {}] for [{}]", irCrv.getKey(), bssd);
+							continue;
+						}
+	
+						
+						int delNum2 = session.createQuery("delete IrSprdAfnsCalc a where baseYymm=:param1 and a.irModelId=:param2 and a.irCurveId=:param3")
+						                     .setParameter("param1", bssd) 
+									  		 .setParameter("param2", irModelId) // AFNS_STO
+											 .setParameter("param3", irCrv.getKey())
+											 .executeUpdate();					
+	
+						log.info("[{}] has been Deleted in Job:[{}] [IR_MODEL_ID: {}, IR_CURVE_ID: {}, COUNT: {}]", Process.toPhysicalName(IrSprdAfnsCalc.class.getSimpleName()), jobLog.getJobId(), irModelId, irCrv.getKey(), delNum2);
+						
+						List<IrCurveSpotWeek> weekHisList    = IrCurveSpotWeekDao.getIrCurveSpotWeekHis(bssd, iRateHisStBaseDate, irCrv.getKey(), tenorList, weekDay, false);
+						List<IrCurveSpotWeek> weekHisBizList = IrCurveSpotWeekDao.getIrCurveSpotWeekHis(bssd, iRateHisStBaseDate, irCrv.getKey(), tenorList, weekDay, true);
+						log.info("weekHisList: [{}], [TOTAL: {}, BIZDAY: {}], [from {} to {}, weekDay:{}]", irCrv.getKey(), weekHisList.size(), weekHisBizList.size(), iRateHisStBaseDate.substring(0,6), bssd, weekDay);			
+	
+						//for ensuring enough input size
+						if(weekHisList.size() < 1000) {
+							log.warn("Weekly SpotRate Data is not Enough [ID: {}, SIZE: {}] for [{}]", irCrv.getKey(), weekHisList.size(), bssd);
+							continue;
+						}					
+	
+						List<IrCurveSpot> curveHisList = weekHisList.stream().map(s->s.convertToHis()).collect(toList());
+	//					curveHisList = curveHisList.stream().filter(s -> Integer.valueOf(s.getBaseDate()) >= 20110701).collect(toList());
+						
+						//Any curveBaseList result in same parameters and spreads.
+						List<IrCurveSpot> curveBaseList = IrCurveSpotDao.getIrCurveSpot(bssd, irCrv.getKey(), tenorList);	
+						
+						if(curveBaseList.size()==0) {
+							log.warn("No IR Curve Data [IR_CURVE_ID: {}] for [{}]", irCrv.getKey(), bssd);
+							continue;
+						}
+						
+						List<IrParamAfnsCalc> optParam = IrParamAfnsDao.getIrParamAfnsCalcList(bssd, "AFNS" , irCrv.getKey()).stream()
+								.sorted(Comparator.comparingInt(p -> p.getParamTypCd().ordinal()))
+								.collect(Collectors.toList());
+						
+						double errorTolerance = StringUtil.objectToPrimitive(modelMstMap.get(irCrv.getKey()).getItrTol(), 1E-8);
+						
+						Map<String, List<?>> irShockSenario = new TreeMap<String, List<?>>();
+						irShockSenario = Esg740_ShkSprdAfnsSto.createAfnsShockScenario
+								(
+									FinUtils.toEndOfMonth(bssd)
+									, irModelId // AFNS_STO
+									, curveHisList
+									, curveBaseList
+									, tenorList
+									, dt
+									, sigmaInit
+		                            , irCurveSwMap.get(irCrv.getKey()).getLtfr()
+			                        , irCurveSwMap.get(irCrv.getKey()).getLtfrCp()
+			                        , projectionYear
+			                        , errorTolerance
+			                        , kalmanItrMax
+			                        , confInterval
+			                        , epsilonInit
+			                        , optParam // add 
+			                      );				
+				
+					
+						for(Map.Entry<String, List<?>> rslt : irShockSenario.entrySet()) {						
+	//						if(!rslt.getKey().equals("CURVE")) rslt.getValue().forEach(s -> log.info("{}, {}", s.toString()));						
+							rslt.getValue().forEach(s -> session.save(s));
+	
+							session.flush();
+							session.clear();
+						}					
+					}
+					completeJob("SUCCESS", jobLog);
+					
+				} catch (Exception e) {
+					log.error("ERROR: {}", e);
+					completeJob("ERROR", jobLog);
+				}			
+				session.saveOrUpdate(jobLog);
+				session.getTransaction().commit();
+			}
+		}
 
 	private static void job810() {
 		if(jobList.contains("810")) {

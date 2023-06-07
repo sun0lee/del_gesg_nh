@@ -47,5 +47,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="D:/H2/bin/h2-2.1.214.jar"/>
+	<classpathentry kind="lib" path="D:/esgLib/ssj-3.3.1.jar"/>
+	<classpathentry kind="lib" path="D:/esgLib/commons-codec-1.9.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
