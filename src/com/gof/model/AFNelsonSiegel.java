@@ -565,6 +565,7 @@ public class AFNelsonSiegel extends IrModel {
 				                       , new UnivariateObjectiveFunction(fp)
 				                       , GoalType.MINIMIZE
 				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();		
+		log.info("find initialLamda:{},residual Sum Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
 	}
 	
 	
@@ -585,6 +586,7 @@ public class AFNelsonSiegel extends IrModel {
 			
 			residualSum += residue[i];
 		}
+//		log.info("residualSum, lambda :{}, {}", residualSum, lambda);
 		return residualSum;		
 	}	
 	
@@ -610,7 +612,7 @@ public class AFNelsonSiegel extends IrModel {
 		this.kappaS = -Math.log(linRegS.getSlope()) / this.dt;
 		this.kappaC = -Math.log(linRegC.getSlope()) / this.dt;
 		
-//		log.info("{}, {}, {}, {}, {}, {}", this.thetaL, this.thetaS, this.thetaC, this.kappaL, this.kappaS, this.kappaC);
+		log.info("findInitailThetaKappa :{}, {}, {}, {}, {}, {}", this.thetaL, this.thetaS, this.thetaC, this.kappaL, this.kappaS, this.kappaC);
 	}		
 	
 

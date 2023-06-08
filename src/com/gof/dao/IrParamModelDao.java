@@ -19,12 +19,13 @@ public class IrParamModelDao extends DaoUtil {
 		
 		String q = " select a from IrParamModel a     "
 				 + "  where 1=1                       "
-				 + "    and irModelId like :irModelId "
+				 + "    and irModelId = :irModelId "
 				 + "    and a.useYn = :useYn          "
 				 ;		
 		
 		return session.createQuery(q, IrParamModel.class)
-				      .setParameter("irModelId" , "%"+irModelId+"%")
+//				      .setParameter("irModelId" , "%"+irModelId+"%")
+				      .setParameter("irModelId" , irModelId ) // 23.06.08 수정 
 					  .setParameter("useYn"     , EBoolean.Y)
 					  .getResultList();
 	}

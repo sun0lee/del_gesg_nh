@@ -303,11 +303,11 @@ public class Main {
 		}
 		
 		jobList.clear();
-//		jobList.add("220");
+		jobList.add("220");
 //		jobList.add("710");
 //		jobList.add("720");
 //		jobList.add("730");
-		jobList.add("740");
+//		jobList.add("740");
 //		jobList.add("260");
 //		jobList.add("261");
 //		jobList.add("270");
@@ -1978,7 +1978,7 @@ public class Main {
 				session.beginTransaction();
 				CoJobInfo jobLog = startJogLog(EJob.ESG710);			
 	
-				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS"    ).trim().toUpperCase();						
+				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS_IM"    ).trim().toUpperCase();						
 				int    weekDay         = Integer.valueOf((String) argInDBMap.getOrDefault("AFNS_WEEK_DAY"        , "5"));
 				double confInterval    = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_CONF_INTERVAL"   , "0.995"));
 				
@@ -2092,7 +2092,7 @@ public class Main {
 				session.beginTransaction();
 				CoJobInfo jobLog = startJogLog(EJob.ESG720);			
 	
-				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS"    ).trim().toUpperCase();						
+				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS_IM"    ).trim().toUpperCase();						
 				int    weekDay         = Integer.valueOf((String) argInDBMap.getOrDefault("AFNS_WEEK_DAY"        , "5"));
 				double confInterval    = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_CONF_INTERVAL"   , "0.995"));
 				
@@ -2171,7 +2171,7 @@ public class Main {
 						}					
 						
 						// enum에 정의된 순서로 정렬해서 받음 =>  모수는 enum에 정의한 순서대로 다른 의미를 갖는 값이기 때문에 순서가 중요함.  
-						List<IrParamAfnsCalc> initParam = IrParamAfnsDao.getIrParamAfnsCalcInitList(bssd, "AFNS", irCrv.getKey()).stream()
+						List<IrParamAfnsCalc> initParam = IrParamAfnsDao.getIrParamAfnsCalcInitList(bssd, irModelId, irCrv.getKey()).stream()
 							                                            .sorted(Comparator.comparingInt(p -> p.getParamTypCd().ordinal()))
 							                                            .collect(Collectors.toList());
 						
@@ -2215,7 +2215,7 @@ public class Main {
 				session.beginTransaction();
 				CoJobInfo jobLog = startJogLog(EJob.ESG730);			
 	
-				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS"    ).trim().toUpperCase();						
+				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS_IM"    ).trim().toUpperCase();						
 				int    weekDay         = Integer.valueOf((String) argInDBMap.getOrDefault("AFNS_WEEK_DAY"        , "5"));
 				double confInterval    = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_CONF_INTERVAL"   , "0.995"));
 				
@@ -2285,7 +2285,7 @@ public class Main {
 							continue;
 						}
 						
-						List<IrParamAfnsCalc> optParam = IrParamAfnsDao.getIrParamAfnsCalcList(bssd, "AFNS" , irCrv.getKey()).stream()
+						List<IrParamAfnsCalc> optParam = IrParamAfnsDao.getIrParamAfnsCalcList(bssd, irModelId , irCrv.getKey()).stream()
 								.sorted(Comparator.comparingInt(p -> p.getParamTypCd().ordinal()))
 								.collect(Collectors.toList());
 						
@@ -2330,7 +2330,7 @@ public class Main {
 				CoJobInfo jobLog = startJogLog(EJob.ESG740);			
 	
 				String irModelId       = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS_STO"    ).trim().toUpperCase();						
-				String upperirModelId  = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS"    ).trim().toUpperCase();
+				String upperirModelId  = argInDBMap.getOrDefault("AFNS_MODE"         , "AFNS_IM"    ).trim().toUpperCase();
 				int    weekDay         = Integer.valueOf((String) argInDBMap.getOrDefault("AFNS_WEEK_DAY"        , "5"));
 				double confInterval    = Double. valueOf((String) argInDBMap.getOrDefault("AFNS_CONF_INTERVAL"   , "0.995"));
 				
@@ -2400,7 +2400,7 @@ public class Main {
 							continue;
 						}
 						
-						List<IrParamAfnsCalc> optParam = IrParamAfnsDao.getIrParamAfnsCalcList(bssd, "AFNS" , irCrv.getKey()).stream()
+						List<IrParamAfnsCalc> optParam = IrParamAfnsDao.getIrParamAfnsCalcList(bssd, upperirModelId , irCrv.getKey()).stream()
 								.sorted(Comparator.comparingInt(p -> p.getParamTypCd().ordinal()))
 								.collect(Collectors.toList());
 						
