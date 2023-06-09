@@ -93,6 +93,14 @@ public class AFNelsonSiegel extends IrModel {
 	protected double        kappaC;	
 	protected double        epsilon;
 	
+	// 2023.06.09 add 초기모수에 sigma 추가 
+	protected double        sigmaL;
+	protected double        sigmaS;
+	protected double        sigmaC;
+	protected double        sigmaLS;
+	protected double        sigmaLC;
+	protected double        sigmaSC;
+	
 	// 23.06.05 add for 내부모형 stoScen 
 	protected int           scenNum = 1000 ;
 	protected int           randomGenType = 1;
@@ -515,6 +523,9 @@ public class AFNelsonSiegel extends IrModel {
 		findInitialLambda();
 		findInitailThetaKappa();		
 		
+		// 23.06.09 init sigma add 
+		findInitailSigma();
+		
 		this.initParas = new double[14];
 		
 		this.initParas[0]  = this.lambda;
@@ -522,9 +533,19 @@ public class AFNelsonSiegel extends IrModel {
 		this.initParas[4]  = Math.max(this.kappaL, 1e-4); 
 		this.initParas[5]  = Math.max(this.kappaS, 1e-4);		
 		this.initParas[6]  = Math.max(this.kappaC, 1e-4);		
-		this.initParas[7]  = this.initSigma; this.initParas[8]  = 0.0; this.initParas[9]  = this.initSigma;
-		this.initParas[10] = 0.0;            this.initParas[11] = 0.0; this.initParas[12] = this.initSigma;
-		this.initParas[13] = this.epsilon * 1000;
+//		this.initParas[7]  = this.initSigma; this.initParas[8]  = 0.0; this.initParas[9]  = this.initSigma;
+//		this.initParas[10] = 0.0;            this.initParas[11] = 0.0; this.initParas[12] = this.initSigma;
+
+		// 23.06.09 init sigma add 
+		this.initParas[7]  = this.sigmaL; 
+		this.initParas[8]  = this.sigmaLS; 
+		this.initParas[9]  = this.sigmaS;
+		this.initParas[10] = this.sigmaLC;            
+		this.initParas[11] = this.sigmaSC; 
+		this.initParas[12] = this.sigmaC;
+//		this.initParas[13] = this.epsilon * 1000;
+		// 23.06.09 init epsilon setting 
+		this.initParas[13] = this.epsilon;
 	}	
 	
 
@@ -564,16 +585,20 @@ public class AFNelsonSiegel extends IrModel {
 		this.lambda = optimizer.optimize(new MaxEval(10000)
 				                       , new UnivariateObjectiveFunction(fp)
 				                       , GoalType.MINIMIZE
-				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();		
-		log.info("find initialLamda:{},residual Sum Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
+				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();	
+
+		int elementCnt = this.iRateHis.length * this.tenor.length;
+		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
+		
+		log.info("find initialLamda:{}, initialEpsilon :{}, residual Average Of Squares : {}", this.lambda, this.epsilon, residualSumOfSquares(this.lambda));
 	}
 	
 	
 	private double residualSumOfSquares(double lambda) {
 		
 		double residualSum = 0.0;		
-		double[][] xArray = factorLoad(lambda, this.tenor, false);		
-
+		double[][] xArray = factorLoad(lambda, this.tenor, false);	
+		
 		for(int i=0; i<this.iRateHis.length; i++) {		
 
 			double[] yArray = this.iRateHis[i];			
@@ -587,9 +612,9 @@ public class AFNelsonSiegel extends IrModel {
 			residualSum += residue[i];
 		}
 //		log.info("residualSum, lambda :{}, {}", residualSum, lambda);
+		
 		return residualSum;		
 	}	
-	
 	
 	private void findInitailThetaKappa() {	
 		
@@ -615,7 +640,74 @@ public class AFNelsonSiegel extends IrModel {
 		log.info("findInitailThetaKappa :{}, {}, {}, {}, {}, {}", this.thetaL, this.thetaS, this.thetaC, this.kappaL, this.kappaS, this.kappaC);
 	}		
 	
+	private void findInitailSigma() {
+		
+	    SimpleRegression linRegL = new SimpleRegression(true);
+	    SimpleRegression linRegS = new SimpleRegression(true);
+	    SimpleRegression linRegC = new SimpleRegression(true);
+	    
+	    // 잔차 
+	    double[] residualL = new double[coeffLt.length - 1];
+	    double[] residualS = new double[coeffSt.length - 1];
+	    double[] residualC = new double[coeffCt.length - 1];
+	    double  dt         = 1/52d ;
+	    
+	    // 회귀분석 : 모수추정
+		for(int i=0; i<coeffLt.length-1; i++) {
+			
+			linRegL.addData(coeffLt[i], coeffLt[i+1]);
+			linRegS.addData(coeffSt[i], coeffSt[i+1]);
+			linRegC.addData(coeffCt[i], coeffCt[i+1]);			
+		}
+	    // 예측치 산출 및 잔차 계산
+	    for (int i = 0; i < coeffLt.length - 1; i++) {
+	        double pL = linRegL.predict(coeffLt[i]); 
+	        double pS = linRegS.predict(coeffSt[i]);
+	        double pC = linRegC.predict(coeffCt[i]);
+	        		
+	        residualL[i] = coeffLt[i + 1] - pL; 
+	        residualS[i] = coeffSt[i + 1] - pS;
+	        residualC[i] = coeffCt[i + 1] - pC;
+	    }
 
+	    // 잔차 상의 분산 추정치 계산
+	    SimpleMatrix resiE = new SimpleMatrix(coeffLt.length - 1, 3);
+	    for (int i = 0; i < residualL.length; i++) {
+	        resiE.set(i, 0, residualL[i]);
+	        resiE.set(i, 1, residualS[i]);
+	        resiE.set(i, 2, residualC[i]);
+	    }
+
+	    // (잔차제곱의 평균)의 제곱근 SQRT(AVERAGE(B26:PA31*B26:PA31))
+//	    this.epsilon = Math.sqrt(resiE.elementPower(2).elementSum() / resiE.getNumElements()) ;
+	    
+	    SimpleMatrix omegaHat = new SimpleMatrix(resiE.transpose().mult(resiE).scale(1.0 / (coeffLt.length - 2))); //자유도 고려할때 3을 빼야 하나 2를 빼야 하나.(논문은 3, 엑셀은 2) 
+
+		CholeskyDecomposition_F64<DMatrixRMaj> chol = DecompositionFactory_DDRM.chol(true);
+		
+		if(!chol.decompose(omegaHat.getDDRM())) {
+			log.error("Cholesky Decomposition is failed in AFNS Process!");
+			System.exit(0);
+		}
+		SimpleMatrix omega          = new SimpleMatrix(chol.getT(omegaHat.getDDRM()));  
+		SimpleMatrix sigma = new SimpleMatrix( omega.scale(1 / Math.sqrt(dt)));
+
+	    
+	    // 추정된 잔차 상의 분산 값 설정
+	    this.sigmaL  = sigma.get(0, 0);
+	    this.sigmaS  = sigma.get(1, 1);
+	    this.sigmaC  = sigma.get(2, 2);
+	    this.sigmaLS = sigma.get(1, 0);
+	    this.sigmaLC = sigma.get(2, 0);
+	    this.sigmaSC = sigma.get(2, 1);
+
+//	    log.info("omegaHat :{}", omegaHat.toString());
+//	    log.info("omega :{}", omega.toString());
+//	    log.info("sigma :{}", sigma.toString());
+	    log.info("findInitailSigma: {}, {}, {}, {}, {}, {}", this.sigmaL, this.sigmaS, this.sigmaC, this.sigmaLS, this.sigmaLC, this.sigmaSC);
+	}
+
+	
 	private void kalmanFiltering() {		
 		kalmanFiltering(this.initParas);
 	}
@@ -671,9 +763,9 @@ public class AFNelsonSiegel extends IrModel {
 		try {			
 			for(int i=0; i<this.itrMax; i++) {		
 				
-				SimplexOptimizer optimizer = new SimplexOptimizer(1e-12, 1e-12);
+				SimplexOptimizer optimizer = new SimplexOptimizer(1e-5, 1e-5); //1e-12
 				AbstractSimplex  ndsimplex = new NelderMeadSimplex(nelderMeadStep(calibParas, 0.001));
-				PointValuePair   result    = optimizer.optimize(new MaxEval(100000)
+				PointValuePair   result    = optimizer.optimize(new MaxEval(100000) // 100000
 //						                                      , new ObjectiveFunction(fp)
 						                                      , new ObjectiveFunction(fpConstr)
 						                                      , ndsimplex
@@ -785,6 +877,7 @@ public class AFNelsonSiegel extends IrModel {
 			// Log-Likelihood function
 			logLike           += - 0.5 * this.tenor.length * Math.log(2 * Math.PI) - 0.5 * Math.log(Ev.determinant()) - 0.5 * Er.transpose().mult(Evinv).dot(Er);
 			
+//			log.info("String : {},{},{}" ,i, logLike, Yimp) ; 
 			this.coeffLt[i] = PrevX.get(0,0);  this.coeffSt[i] = PrevX.get(1,0);  this.coeffCt[i] = PrevX.get(2,0);
 		}		
 		return -logLike;

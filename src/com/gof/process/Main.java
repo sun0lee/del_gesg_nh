@@ -303,9 +303,9 @@ public class Main {
 		}
 		
 		jobList.clear();
-		jobList.add("220");
-//		jobList.add("710");
-//		jobList.add("720");
+//		jobList.add("220");
+		jobList.add("710");
+		jobList.add("720");
 //		jobList.add("730");
 //		jobList.add("740");
 //		jobList.add("260");
@@ -698,8 +698,8 @@ public class Main {
 					log.info("AFNS Shock Spread (Cont) for [{}({}, {})]", irCrv.getKey(), irCrv.getValue().getIrCurveNm(), irCrv.getValue().getCurCd());
 					
 					List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
-					
-					// 엑셀과 모수 추정에 사용하는 테너만 남기기
+					// TODO : 700 job과 결과 비교 후 삭제 
+					// 엑셀과 모수 추정에 사용하는 테너만 남기기 
 					tenorList.remove("M0003");
 					tenorList.remove("M0006");
 					tenorList.remove("M0009");
