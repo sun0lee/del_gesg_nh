@@ -26,6 +26,7 @@
     <property name="hibernate.show_sql">false</property> 
     <property name="hibernate.format_sql">true</property> 
     
+    
     <mapping class="com.gof.entity.CoCdMst"/>
     <mapping class="com.gof.entity.CoEsgMeta"/>
     <mapping class="com.gof.entity.CoJobInfo"/>
@@ -43,8 +44,10 @@
     <mapping class="com.gof.entity.IrDcntRate"/>
     <mapping class="com.gof.entity.IrDcntRateBiz"/>
     <mapping class="com.gof.entity.IrDcntRateBu"/>
+    <mapping class="com.gof.entity.IrDcntRateBuIm"/>
     <mapping class="com.gof.entity.IrDcntRateUsr"/>
     <mapping class="com.gof.entity.IrDcntSceDetBiz"/>
+    <mapping class="com.gof.entity.IrDcntSceIm"/>
     <mapping class="com.gof.entity.IrDcntSceStoBiz"/>
     <mapping class="com.gof.entity.IrDcntSceStoGnr"/>
     

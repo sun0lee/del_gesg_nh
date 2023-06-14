@@ -36,10 +36,13 @@ public enum EJob {
 	, ESG420 ("Biz Applied CIR Forcasting Model Parameter")
 	, ESG430 ("Stochastic Scenario of CIR Forcasting Model")	
 	
-	, ESG710 ("")
-	, ESG720 ("")
-	, ESG730 ("")
-	, ESG740 ("")
+	, ESG710 ("init param")
+	, ESG720 ("opti param")
+	, ESG730 ("DNS Shock(det.5) Spread")
+	, ESG740 ("DNS Shock(sto.1000) Spread")
+	
+	, ESG760 ("BottomUp Risk Free TermStructure with Liquidity Premium")
+	, ESG770 ("Interpolated TermStructure by SW")
 
 	, ESG810 ("Set Transition Matrix")
 	, ESG820 ("Corporate PD from Transition Matrix")

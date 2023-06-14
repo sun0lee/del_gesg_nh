@@ -42,6 +42,8 @@ import com.gof.dao.RcCorpPdDao;
 import com.gof.entity.IrDcntRate;
 import com.gof.entity.IrDcntRateBiz;
 import com.gof.entity.IrDcntRateBu;
+import com.gof.entity.IrDcntRateBuIm;
+import com.gof.entity.IrDcntSceIm;
 import com.gof.entity.IrDcntSceStoBiz;
 import com.gof.entity.IrDcntSceStoGnr;
 import com.gof.entity.IrParamAfnsCalc;
@@ -174,8 +176,10 @@ public class Main {
 		
 		job710(); // afns 초기 모수 setting
 		job720(); // afns 모수 최적화
-		job730(); // afns 시나리오 생성 
-		job740();  
+		job730(); // afns spread 생성 
+		job740(); // afns spread sto 생성 
+		job760(); //  BottomUp Risk Free TermStructure with Liquidity Premium
+		job770(); //  Interpolated TermStructure by SW
 // ****************************************************************** RC Job                              ********************************
 
 		job810();		// Job 810: Set Transition Matrix
@@ -304,10 +308,7 @@ public class Main {
 		
 		jobList.clear();
 //		jobList.add("220");
-		jobList.add("710");
-		jobList.add("720");
-//		jobList.add("730");
-//		jobList.add("740");
+
 //		jobList.add("260");
 //		jobList.add("261");
 //		jobList.add("270");
@@ -321,6 +322,12 @@ public class Main {
 //		jobList.add("360");
 //		jobList.add("370");
 		
+//		jobList.add("710");
+//		jobList.add("720");
+//		jobList.add("730");
+//		jobList.add("740");
+//		jobList.add("760");
+		jobList.add("770");
 		
 	}		
 	
@@ -2359,10 +2366,6 @@ public class Main {
 						log.info("AFNS Shock Spread (Cont) for [{}({}, {})]", irCrv.getKey(), irCrv.getValue().getIrCurveNm(), irCrv.getValue().getCurCd());
 						
 						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
-	//					tenorList.remove("M0048"); tenorList.remove("M0084"); tenorList.remove("M0180");  //FOR CHECK w/ FSS
-	//					log.info("{}", tenorList);
-						//TODO:
-	//					tenorList.remove("M0180");
 						
 						log.info("TenorList in [{}]: ID: [{}], llp: [{}], matCd: {}", jobLog.getJobId(), irCrv.getKey(), irCurveSwMap.get(irCrv.getKey()).getLlp(), tenorList);
 						if(tenorList.isEmpty()) {
@@ -2390,7 +2393,6 @@ public class Main {
 						}					
 	
 						List<IrCurveSpot> curveHisList = weekHisList.stream().map(s->s.convertToHis()).collect(toList());
-	//					curveHisList = curveHisList.stream().filter(s -> Integer.valueOf(s.getBaseDate()) >= 20110701).collect(toList());
 						
 						//Any curveBaseList result in same parameters and spreads.
 						List<IrCurveSpot> curveBaseList = IrCurveSpotDao.getIrCurveSpot(bssd, irCrv.getKey(), tenorList);	
@@ -2445,6 +2447,67 @@ public class Main {
 				session.getTransaction().commit();
 			}
 		}
+	
+	private static void job760() {
+		if(jobList.contains("760")) {
+			session.beginTransaction();
+			CoJobInfo jobLog = startJogLog(EJob.ESG760);
+			
+			try {
+				int delNum = session.createQuery("delete IrDcntRateBuIm a where a.baseYymm=:param").setParameter("param", bssd).executeUpdate();				
+				log.info("[{}] has been Deleted in Job:[{}] [BASE_YYMM: {}, COUNT: {}]", Process.toPhysicalName(IrDcntRateBuIm.class.getSimpleName()), jobLog.getJobId(), bssd, delNum);
+				
+				List<IrDcntRateBuIm> imDetDcntRateBu = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_IM", "KICS", kicsSwMap);				
+				imDetDcntRateBu.stream().forEach(s -> session.save(s));
+				
+				List<IrDcntRateBuIm> imStoDcntRateBu = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_STO", "KICS", kicsSwMap);				
+				imStoDcntRateBu.stream().forEach(s -> session.save(s));
+				
+				
+				session.flush();
+				session.clear();
+				completeJob("SUCCESS", jobLog);
+				
+			} catch (Exception e) {
+				log.error("ERROR: {}", e);
+				completeJob("ERROR", jobLog);					
+			}				
+			session.saveOrUpdate(jobLog);
+			session.getTransaction().commit();			
+		}			
+	}
+	private static void job770() {
+			if(jobList.contains("770")) {
+				session.beginTransaction();
+				CoJobInfo jobLog = startJogLog(EJob.ESG770);			
+	
+				try {				
+					int delNum = session.createQuery("delete IrDcntSceIm a where a.baseYymm=:param").setParameter("param", bssd).executeUpdate();				
+					log.info("[{}] has been Deleted in Job:[{}] [BASE_YYMM: {}, COUNT: {}]", Process.toPhysicalName(IrDcntSceIm.class.getSimpleName()), jobLog.getJobId(), bssd, delNum);
+					
+	
+					List<IrDcntSceIm> imDetDcntSceDet = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_IM", "KICS", kicsSwMap, projectionYear);				
+					imDetDcntSceDet.stream().forEach(s -> session.save(s));
+					
+					
+					// 스프레드 변동성이 너무너무 큼!!! -> 금리커브가 비정상적으로 산출됨. 
+//					List<IrDcntSceIm> imDetDcntSceSto = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_STO", "KICS", kicsSwMap, projectionYear);				
+//					imDetDcntSceSto.stream().forEach(s -> session.save(s));
+					
+					
+					session.flush();
+					session.clear();
+					completeJob("SUCCESS", jobLog);
+					
+				} catch (Exception e) {
+					log.error("ERROR: {}", e);
+					completeJob("ERROR", jobLog);
+				}			
+				session.saveOrUpdate(jobLog);
+				session.getTransaction().commit();
+			}
+		}
+
 
 	private static void job810() {
 		if(jobList.contains("810")) {

@@ -10,6 +10,7 @@ import com.gof.entity.IrCurveSpot;
 import com.gof.entity.IrDcntRate;
 import com.gof.entity.IrDcntRateBiz;
 import com.gof.entity.IrDcntRateBu;
+import com.gof.entity.IrDcntRateBuIm;
 import com.gof.entity.IrDcntRateUsr;
 import com.gof.util.HibernateUtil;
 
@@ -207,5 +208,31 @@ public class IrDcntRateDao extends DaoUtil {
 	public static List<IrDcntRateBiz> getIrDcntRateBizBaseSpotList(String bssd, String applBizDv, String irCurveId) {		
 		return getIrDcntRateList(bssd, applBizDv, irCurveId).stream().map(s -> s.convertBase()).collect(Collectors.toList());
 	}	
+	
+	public static List<IrDcntRateBuIm> getIrDcntRateBuImList(String bssd, String applBizDv,String irModelId, String irCurveId, Integer irCurveSceNo){
+		
+		String query = "select a from IrDcntRateBuIm a "
+					 + " where 1=1 "
+					 + "   and a.baseYymm     = :bssd         "
+					 + "   and a.applBizDv    = :applBizDv    "
+					 + "   and a.irModelId    = :irModelId    "
+					 + "   and a.irCurveId    = :irCurveId    "
+					 + "   and a.irCurveSceNo = :irCurveSceNo "
+					 ;
+		
+		return session.createQuery(query, IrDcntRateBuIm.class)
+			      	  .setParameter("bssd", bssd)
+			      	  .setParameter("applBizDv", applBizDv)
+			      	  .setParameter("irModelId", irModelId)
+			      	  .setParameter("irCurveId", irCurveId)	
+			      	  .setParameter("irCurveSceNo", irCurveSceNo)
+					  .getResultList();
+	}
+	
+	
+	public static List<IrCurveSpot> getIrDcntRateBuImToAdjSpotList(String bssd, String applBizDv, String irModelId, String irCurveId, Integer irCurveSceNo) {		
+		return getIrDcntRateBuImList(bssd, applBizDv,irModelId,irCurveId, irCurveSceNo).stream().map(s -> s.convertAdj()).collect(Collectors.toList());
+	}	
+
 	
 }

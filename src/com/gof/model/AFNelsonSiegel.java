@@ -3,7 +3,6 @@ package com.gof.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -488,7 +487,6 @@ public class AFNelsonSiegel extends IrModel {
 		// To set this.IntShock
         afnsShockStoGenerating();	
 	}
-
 	
 	
 	public List<IrDcntSceDetBiz> getAfnsResultList() {
@@ -543,9 +541,7 @@ public class AFNelsonSiegel extends IrModel {
 		this.initParas[10] = this.sigmaLC;            
 		this.initParas[11] = this.sigmaSC; 
 		this.initParas[12] = this.sigmaC;
-//		this.initParas[13] = this.epsilon * 1000;
-		// 23.06.09 init epsilon setting 
-		this.initParas[13] = this.epsilon;
+		this.initParas[13] = this.epsilon * 1000;
 	}	
 	
 
@@ -587,10 +583,11 @@ public class AFNelsonSiegel extends IrModel {
 				                       , GoalType.MINIMIZE
 				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();	
 
-		int elementCnt = this.iRateHis.length * this.tenor.length;
-		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
+// 23.066 13 epsilone 은 초기값 1로 설정 	
+//		int elementCnt = this.iRateHis.length * this.tenor.length;
+//		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
 		
-		log.info("find initialLamda:{}, initialEpsilon :{}, residual Average Of Squares : {}", this.lambda, this.epsilon, residualSumOfSquares(this.lambda));
+		log.info("find initialLamda:{}, residual Average Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
 	}
 	
 	
@@ -678,9 +675,6 @@ public class AFNelsonSiegel extends IrModel {
 	        resiE.set(i, 2, residualC[i]);
 	    }
 
-	    // (잔차제곱의 평균)의 제곱근 SQRT(AVERAGE(B26:PA31*B26:PA31))
-//	    this.epsilon = Math.sqrt(resiE.elementPower(2).elementSum() / resiE.getNumElements()) ;
-	    
 	    SimpleMatrix omegaHat = new SimpleMatrix(resiE.transpose().mult(resiE).scale(1.0 / (coeffLt.length - 2))); //자유도 고려할때 3을 빼야 하나 2를 빼야 하나.(논문은 3, 엑셀은 2) 
 
 		CholeskyDecomposition_F64<DMatrixRMaj> chol = DecompositionFactory_DDRM.chol(true);
@@ -763,7 +757,7 @@ public class AFNelsonSiegel extends IrModel {
 		try {			
 			for(int i=0; i<this.itrMax; i++) {		
 				
-				SimplexOptimizer optimizer = new SimplexOptimizer(1e-5, 1e-5); //1e-12
+				SimplexOptimizer optimizer = new SimplexOptimizer(1e-12, 1e-12); //1e-12
 				AbstractSimplex  ndsimplex = new NelderMeadSimplex(nelderMeadStep(calibParas, 0.001));
 				PointValuePair   result    = optimizer.optimize(new MaxEval(100000) // 100000
 //						                                      , new ObjectiveFunction(fp)
@@ -1094,7 +1088,8 @@ public class AFNelsonSiegel extends IrModel {
 		}		
 		return curveList;
 	}
-		
+	
+	
 	
 	private SimpleMatrix toSpotShock(SimpleMatrix intShock, double liqPrem) {
 		
@@ -1124,7 +1119,6 @@ public class AFNelsonSiegel extends IrModel {
 		return fLoad;
 	}
 	
-
 	private double[][] factorLoad(double lambda, double[] tau) {
 		
 		double[][] fLoad = new double[tau.length][3];                                 // fLoad[i] = [L1, S1, C1], ... , [Ln, Sn, Cn]
@@ -1137,7 +1131,6 @@ public class AFNelsonSiegel extends IrModel {
 		}		
 		return fLoad;
 	}
-	
 	
 	protected static double[] afnsC(SimpleMatrix sigma, double lambda, double[] tau) {
 		
@@ -1231,7 +1224,7 @@ public class AFNelsonSiegel extends IrModel {
 		return paramList;
 	}
 	
-	// X ~ Z(0,1) 표준 정규분포를 따르는 난수를 반환
+	// 표준 정규분포를 따르는 난수를 반환
 		private void randomNumberGaussian(int len) {
 			
 //			int len = 3 ; // ;this.optLSC.length ;

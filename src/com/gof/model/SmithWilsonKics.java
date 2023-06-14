@@ -231,7 +231,7 @@ public class SmithWilsonKics extends IrModel {
 		
 		List<SmithWilsonRslt> swResultlList = new ArrayList<SmithWilsonRslt>();			
 		this.smithWilsonAlphaFinding();
-		log.info("AlphaOpt: {}, Error: {}", this.alphaApplied, Math.abs(this.alphaFwd - this.ltfrCont));
+//		log.info("AlphaOpt: {}, Error: {}", this.alphaApplied, Math.abs(this.alphaFwd - this.ltfrCont));
 //		log.info("{}", this.zetaColumn);
 		
 		double[] df = new double[this.prjYearFrac.length];

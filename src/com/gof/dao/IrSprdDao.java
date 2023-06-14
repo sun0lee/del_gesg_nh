@@ -4,12 +4,14 @@ import java.util.List;
 
 import org.hibernate.Session;
 
+import com.gof.entity.IrCurveSpot;
 import com.gof.entity.IrSprdAfnsBiz;
 import com.gof.entity.IrSprdAfnsCalc;
 import com.gof.entity.IrSprdAfnsUsr;
 import com.gof.entity.IrSprdLp;
 import com.gof.entity.IrSprdLpBiz;
 import com.gof.entity.IrSprdLpUsr;
+import com.gof.util.FinUtils;
 import com.gof.util.HibernateUtil;
 
 public class IrSprdDao extends DaoUtil {
@@ -115,6 +117,43 @@ public class IrSprdDao extends DaoUtil {
 					  .getResultList();
 	}	
 	
+	public static int getIrSprdAfnsCalcScenCnt(String bssd, String irModelId, String irCurveId){
+			
+			String query = 	"select count(distinct a.irCurveSceNo ) from IrSprdAfnsCalc a "
+					 + " where 1=1                            "
+					 + "   and a.baseYymm     = :bssd         "
+					 + "   and a.irModelId    = :irModelId    "
+					 + "   and a.irCurveId    = :irCurveId    "				
+					 + "group by a.baseYymm, a.irModelId, a.irCurveId "
+					 ;
+			
+		    return session.createQuery(query, Long.class)
+	                  .setParameter("bssd", bssd)
+	                  .setParameter("irModelId", irModelId)
+	                  .setParameter("irCurveId", irCurveId)
+	                  .getSingleResult()
+	                  .intValue();
+
+		}
+	
+	public static List<IrSprdAfnsCalc> getIrSprdAfnsCalcList(String bssd, String irModelId, String irCurveId, Integer irCurveSceNo){
+		
+		String query = "select a from IrSprdAfnsCalc a        "
+					 + " where 1=1                            "
+					 + "   and a.baseYymm     = :bssd         "
+					 + "   and a.irModelId    = :irModelId    "
+					 + "   and a.irCurveId    = :irCurveId    "
+					 + "   and a.irCurveSceNo = :irCurveSceNo "
+					 + " order by a.matCd     "
+					 ;
+		
+		return session.createQuery(query, IrSprdAfnsCalc.class)
+			      	  .setParameter("bssd", bssd)
+			      	  .setParameter("irModelId", irModelId)
+			      	  .setParameter("irCurveId", irCurveId)
+			      	  .setParameter("irCurveSceNo", irCurveSceNo)
+					  .getResultList();
+	}	
 	
 	public static List<IrSprdAfnsUsr> getIrSprdAfnsUsrList(String bssd, String irModelId, String irCurveId){
 		
