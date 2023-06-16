@@ -587,7 +587,7 @@ public class AFNelsonSiegel extends IrModel {
 //		int elementCnt = this.iRateHis.length * this.tenor.length;
 //		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
 		
-		log.info("find initialLamda:{}, residual Average Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
+		log.info("find initialLamda:{}, residual Sum Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
 	}
 	
 	
@@ -604,7 +604,8 @@ public class AFNelsonSiegel extends IrModel {
 			reg.newSampleData(yArray, xArray);				
 			
 			double[] rslt = reg.estimateRegressionParameters();			
-			coeffLt[i] = rslt[0]; coeffSt[i] = rslt[1]; coeffCt[i] = rslt[2]; residue[i] = reg.calculateResidualSumOfSquares();			
+			coeffLt[i] = rslt[0]; coeffSt[i] = rslt[1]; coeffCt[i] = rslt[2]; 
+			residue[i] = reg.calculateResidualSumOfSquares();			
 			
 			residualSum += residue[i];
 		}
@@ -1039,7 +1040,7 @@ public class AFNelsonSiegel extends IrModel {
 			
 			// 오차항의 난수 생성. [tenor.lengh][scen#]
 			this.randomNumberGaussian(this.tenor.length);
-			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon) ;
+			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon/100) ;
 
 			stoShock = stoShock.plus(err);
 			

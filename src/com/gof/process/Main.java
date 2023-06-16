@@ -307,6 +307,8 @@ public class Main {
 		}
 		
 		jobList.clear();
+//		jobList.add("151");
+//		jobList.add("210");
 //		jobList.add("220");
 
 //		jobList.add("260");
@@ -324,10 +326,10 @@ public class Main {
 		
 //		jobList.add("710");
 //		jobList.add("720");
-//		jobList.add("730");
+		jobList.add("730");
 //		jobList.add("740");
 //		jobList.add("760");
-		jobList.add("770");
+//		jobList.add("770");
 		
 	}		
 	
@@ -573,9 +575,11 @@ public class Main {
 			CoJobInfo jobLog = startJogLog(EJob.ESG151);			
 			
 			for(String irCrv : irCurveIdList) {
+				if (irCrv.equals("RF_USD")) {
+
 				try {				
-					String stBssd = "200912";
-					String edBssd = "202203";
+					String stBssd = "200912"; // 20130101 20221230
+					String edBssd = "202212";
 					LocalDate sttDate = DateUtil.convertFrom(DateUtil.toEndOfMonth(stBssd));
 					LocalDate endDate = DateUtil.convertFrom(DateUtil.toEndOfMonth(edBssd));
 					int monthDiff = DateUtil.monthBetween(stBssd, edBssd);
@@ -591,7 +595,7 @@ public class Main {
 					log.info("{}", bssdList);				
 					
 					for(LocalDate date : bssdList) {
-						
+
 						String bssd1 = DateUtil.dateToString(date).substring(0, 6);
 						IrCurveSpotDao.deleteIrCurveSpotMonth(bssd1, irCrv);		
 						
@@ -609,7 +613,8 @@ public class Main {
 //							Esg150_YtmToSpotSw.createIrCurveSpot(ytmRst.getKey(), irCrv, ytmRst.getValue()).forEach(s -> session.save(s));
 							Esg150_YtmToSpotSw.createIrCurveSpot(ytmRst.getKey(), irCrv, ytmRst.getValue(), irCurveSwMap.get(irCrv).getSwAlphaYtm(), irCurveSwMap.get(irCrv).getFreq()).forEach(s -> session.save(s));
 						}				
-					}				
+					}	
+				
 					session.flush();
 					session.clear();					
 					completeJob("SUCCESS", jobLog);
@@ -618,7 +623,8 @@ public class Main {
 					log.error("ERROR: {}", e);
 					completeJob("ERROR", jobLog);
 				}
-			}			
+			}		
+			}
 			session.saveOrUpdate(jobLog);
 			session.getTransaction().commit();			
 		}
@@ -638,7 +644,10 @@ public class Main {
 					}
 
 //					List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), irCurveSwMap.get(irCrv.getKey()).getLlp());
-					List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
+					
+					// usd는 30Y 데이터도 사용하기 때문에 20Y을 상한 기준 제거 
+//					List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
+					List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()));
 					log.info("TenorList in [{}]: ID: [{}], llp: [{}], matCd: {}", jobLog.getJobId(), irCrv.getKey(), irCurveSwMap.get(irCrv.getKey()).getLlp(), tenorList);				
 
 					if(tenorList.isEmpty()) {
@@ -2022,7 +2031,10 @@ public class Main {
 						tenorList.remove("M0018");
 						tenorList.remove("M0030");
 						tenorList.remove("M0048"); 
+						tenorList.remove("M0072"); 
+						tenorList.remove("M0096"); 
 						tenorList.remove("M0084"); 
+						tenorList.remove("M0108"); 
 						tenorList.remove("M0180");  //FOR CHECK w/ FSS
 
 						
@@ -2250,11 +2262,10 @@ public class Main {
 						
 						log.info("AFNS Shock Spread (Cont) for [{}({}, {})]", irCrv.getKey(), irCrv.getValue().getIrCurveNm(), irCrv.getValue().getCurCd());
 						
-						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
-	//					tenorList.remove("M0048"); tenorList.remove("M0084"); tenorList.remove("M0180");  //FOR CHECK w/ FSS
-	//					log.info("{}", tenorList);
-						//TODO:
-	//					tenorList.remove("M0180");
+//						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
+
+						// 2023.06.16 USD는 tenor 30Y까지 추정함 
+						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()));
 						
 						log.info("TenorList in [{}]: ID: [{}], llp: [{}], matCd: {}", jobLog.getJobId(), irCrv.getKey(), irCurveSwMap.get(irCrv.getKey()).getLlp(), tenorList);
 						if(tenorList.isEmpty()) {
@@ -2365,7 +2376,9 @@ public class Main {
 						
 						log.info("AFNS Shock Spread (Cont) for [{}({}, {})]", irCrv.getKey(), irCrv.getValue().getIrCurveNm(), irCrv.getValue().getCurCd());
 						
-						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
+						// 2023.06.16 USD는 tenor 30Y까지 추정함 
+//						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), Math.min(StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()), 20));
+						List<String> tenorList = IrCurveSpotDao.getIrCurveTenorList(bssd, irCrv.getKey(), StringUtil.objectToPrimitive(irCurveSwMap.get(irCrv.getKey()).getLlp()));
 						
 						log.info("TenorList in [{}]: ID: [{}], llp: [{}], matCd: {}", jobLog.getJobId(), irCrv.getKey(), irCurveSwMap.get(irCrv.getKey()).getLlp(), tenorList);
 						if(tenorList.isEmpty()) {
@@ -2491,8 +2504,8 @@ public class Main {
 					
 					
 					// 스프레드 변동성이 너무너무 큼!!! -> 금리커브가 비정상적으로 산출됨. 
-//					List<IrDcntSceIm> imDetDcntSceSto = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_STO", "KICS", kicsSwMap, projectionYear);				
-//					imDetDcntSceSto.stream().forEach(s -> session.save(s));
+					List<IrDcntSceIm> imDetDcntSceSto = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_STO", "KICS", kicsSwMap, projectionYear);				
+					imDetDcntSceSto.stream().forEach(s -> session.save(s));
 					
 					
 					session.flush();
