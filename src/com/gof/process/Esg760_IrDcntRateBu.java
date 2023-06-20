@@ -124,7 +124,7 @@ public class Esg760_IrDcntRateBu extends Process {
 				}
 		  }
 		}		
-		log.info("{}({}) creates [{}] results of [{}]. They are inserted into [{}] Table", jobId, EJob.valueOf(jobId).getJobName(), rst.size(), applBizDv, toPhysicalName(IrDcntRateBu.class.getSimpleName()));
+		log.info("{}({}) creates [{}] results of [{}]. They are inserted into [{}] Table", jobId, EJob.valueOf(jobId).getJobName(), rst.size(), applBizDv, toPhysicalName(IrDcntRateBuIm.class.getSimpleName()));
 		
 		return rst;		
 	}		

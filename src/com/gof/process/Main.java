@@ -310,6 +310,8 @@ public class Main {
 //		jobList.add("151");
 //		jobList.add("210");
 //		jobList.add("220");
+//		jobList.add("240");
+//		jobList.add("250");
 
 //		jobList.add("260");
 //		jobList.add("261");
@@ -326,10 +328,10 @@ public class Main {
 		
 //		jobList.add("710");
 //		jobList.add("720");
-		jobList.add("730");
-//		jobList.add("740");
-//		jobList.add("760");
-//		jobList.add("770");
+//		jobList.add("730");
+		jobList.add("740");
+		jobList.add("760");
+		jobList.add("770");
 		
 	}		
 	
@@ -575,7 +577,7 @@ public class Main {
 			CoJobInfo jobLog = startJogLog(EJob.ESG151);			
 			
 			for(String irCrv : irCurveIdList) {
-				if (irCrv.equals("RF_USD")) {
+//				if (irCrv.equals("RF_USD")) {
 
 				try {				
 					String stBssd = "200912"; // 20130101 20221230
@@ -623,7 +625,7 @@ public class Main {
 					log.error("ERROR: {}", e);
 					completeJob("ERROR", jobLog);
 				}
-			}		
+//			}		
 			}
 			session.saveOrUpdate(jobLog);
 			session.getTransaction().commit();			
