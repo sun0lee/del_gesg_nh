@@ -6,14 +6,13 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import com.gof.enums.EJob;
-import com.gof.dao.IrCurveSpotDao;
+import com.gof.dao.IrCurveYtmDao;
 import com.gof.dao.IrDcntRateDao;
 import com.gof.dao.IrSprdDao;
 import com.gof.entity.IrCurveSpot;
+import com.gof.entity.IrCurveYtm;
 import com.gof.entity.IrDcntRateBuIm;
 import com.gof.entity.IrDcntSceIm;
 import com.gof.entity.IrParamSw;
@@ -46,6 +45,10 @@ public class Esg770_ShkScen extends Process {
 			IrParamSw swSce = swMap.get(detScen);
 			LocalDate baseDate = DateUtil.convertFrom(bssd).with(TemporalAdjusters.lastDayOfMonth());
 
+			// 자산 sw 보간 목적 ltfr
+			List<IrCurveYtm> ytmList = IrCurveYtmDao.getIrCurveYtm(bssd, curveSwMap.getKey());
+
+
 			if (swSce != null) {
 				
 			// 생성해야 하는 결과는 det, sto 시나리오 둘 다 있음. ( irModel에 따라 달라짐 )
@@ -62,8 +65,31 @@ public class Esg770_ShkScen extends Process {
 			}
 			
 			// sw 보간/보외 check 연속복리이율을 가져왔으므로 CMPD_MTD_CONT
-			SmithWilsonKics sw = new SmithWilsonKics(baseDate, irDcntRateBuImList, CMPD_MTD_CONT, true, swSce.getLtfr(), swSce.getLtfrCp(), projectionYear, 1, 100, DCB_MON_DIF);
-			List<SmithWilsonRslt> swRslt = sw.getSmithWilsonResultList();			
+//			SmithWilsonKics sw = new SmithWilsonKics(baseDate, irDcntRateBuImList, CMPD_MTD_CONT, true, swSce.getLtfr(), swSce.getLtfrCp(), projectionYear, 1, 100, DCB_MON_DIF);
+//			List<SmithWilsonRslt> swRslt = sw.getSmithWilsonResultList();	
+			
+			// 자산 할인율, 부채 할인율 모두 보간 
+			SmithWilsonKics sw;
+			List<SmithWilsonRslt> swRslt;
+
+			if (applBizDv.equals("KICS_A")) {
+				String matCd = ytmList.get(ytmList.size() - 1).getMatCd();
+				int matMonths = Integer.parseInt(matCd.substring(1));
+				
+				// 23.06.26 좀 더 고민 : 그대로 사용해도 될지(ytm) => spot으로 전환한 값을 사용할지, spot도 연속으로 변환할지 이산형을 사용할지 ? 
+				double ltfrA = ytmList.get(ytmList.size() - 1).getYtm(); 
+				int ltfrTA = matMonths / 12; 
+				if (sceNo == 1) log.info("irCurveId :{}, ltfrA :{}, ltfrTA:{}", curveSwMap.getKey(), ltfrA, ltfrTA);
+
+				
+				sw = new SmithWilsonKics(baseDate, irDcntRateBuImList, CMPD_MTD_CONT, true, ltfrA, ltfrTA, projectionYear, 1, 100, DCB_MON_DIF);
+				swRslt = sw.getSmithWilsonResultList();
+//	
+			} 
+			else { //KICS_L
+			    sw = new SmithWilsonKics(baseDate, irDcntRateBuImList, CMPD_MTD_CONT, true, swSce.getLtfr(), swSce.getLtfrCp(), projectionYear, 1, 100, DCB_MON_DIF);
+			    swRslt = sw.getSmithWilsonResultList();
+			}
 
 			// 결과 쓰기 
 			for(SmithWilsonRslt rslt : swRslt) {				
@@ -82,7 +108,7 @@ public class Esg770_ShkScen extends Process {
 				ir.setLastUpdateDate(LocalDateTime.now());				
 				irScenarioList.add(ir);
 			}						
-			log.info("scenNo: {}, swAlpha: {}", sceNo, sw.getAlphaApplied());
+			log.info("applBizDv:{}, irCurveID:{}, scenNo: {}, swAlpha: {}",applBizDv, curveSwMap.getKey(), sceNo, sw.getAlphaApplied());
 		  }		
 		}
 	   }	

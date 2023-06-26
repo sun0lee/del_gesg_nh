@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import com.gof.dao.IrCurveSpotDao;
 import com.gof.dao.IrSprdDao;
 import com.gof.entity.IrCurveSpot;
-import com.gof.entity.IrDcntRateBu;
 import com.gof.entity.IrDcntRateBuIm;
 import com.gof.entity.IrParamSw;
 import com.gof.entity.IrSprdAfnsCalc;
@@ -52,7 +51,7 @@ public class Esg760_IrDcntRateBu extends Process {
 						// 시나리오 갯수는 det / sto를 구분해서 각각 정의함. 
 					
 				// 유동성 프리미엄은 KICS의 결정론 시나리오 생성시 사용하는 수준을 사용함. 
-					Map<String, Double> irSprdLpMap = IrSprdDao.getIrSprdLpBizList(bssd, applBizDv, curveSwMap.getKey(), detScen).stream()
+					Map<String, Double> irSprdLpMap = IrSprdDao.getIrSprdLpBizList(bssd, "KICS", curveSwMap.getKey(), detScen).stream()
 							                                   .collect(Collectors.toMap(IrSprdLpBiz::getMatCd, IrSprdLpBiz::getLiqPrem));
 	
 					// 생성해야 하는 결과는 det, sto 시나리오 둘 다 있음. ( irModel에 따라 달라짐 )
@@ -90,7 +89,11 @@ public class Esg760_IrDcntRateBu extends Process {
 							double baseSpotCont = irDiscToCont(baseSpot);					
 							
 							double shkCont      = irSprdShkMap.getOrDefault(spot.getMatCd(), 0.0);
-							double lpDisc       = irSprdLpMap.getOrDefault(spot.getMatCd(), 0.0);
+							
+							// 23.06.26 자산 시나리오 (유동성 프리미엄 미반영) 추가 
+//							double lpDisc       = irSprdLpMap.getOrDefault(spot.getMatCd(), 0.0);
+							double lpDisc = applBizDv.equals("KICS_L") ? irSprdLpMap.getOrDefault(spot.getMatCd(), 0.0) : (applBizDv.equals("KICS_A") ? 0.0 : irSprdLpMap.getOrDefault(spot.getMatCd(), 0.0));
+
 							
 //							double spotCont     = baseSpotCont + shkCont;
 //							double spotDisc     = irContToDisc(spotCont);						

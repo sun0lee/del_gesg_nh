@@ -329,8 +329,8 @@ public class Main {
 //		jobList.add("710");
 //		jobList.add("720");
 //		jobList.add("730");
-		jobList.add("740");
-		jobList.add("760");
+//		jobList.add("740");
+//		jobList.add("760");
 		jobList.add("770");
 		
 	}		
@@ -2472,12 +2472,17 @@ public class Main {
 				int delNum = session.createQuery("delete IrDcntRateBuIm a where a.baseYymm=:param").setParameter("param", bssd).executeUpdate();				
 				log.info("[{}] has been Deleted in Job:[{}] [BASE_YYMM: {}, COUNT: {}]", Process.toPhysicalName(IrDcntRateBuIm.class.getSimpleName()), jobLog.getJobId(), bssd, delNum);
 				
-				List<IrDcntRateBuIm> imDetDcntRateBu = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_IM", "KICS", kicsSwMap);				
+				List<IrDcntRateBuIm> imDetDcntRateBu = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_IM", "KICS_L", kicsSwMap);				
 				imDetDcntRateBu.stream().forEach(s -> session.save(s));
 				
-				List<IrDcntRateBuIm> imStoDcntRateBu = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_STO", "KICS", kicsSwMap);				
+				List<IrDcntRateBuIm> imDetDcntRateBuA = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_IM", "KICS_A", kicsSwMap);				
+				imDetDcntRateBuA.stream().forEach(s -> session.save(s));
+				
+				List<IrDcntRateBuIm> imStoDcntRateBu = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_STO", "KICS_L", kicsSwMap);				
 				imStoDcntRateBu.stream().forEach(s -> session.save(s));
 				
+				List<IrDcntRateBuIm> imStoDcntRateBuA = Esg760_IrDcntRateBu.setIrDcntRateBu(bssd, "AFNS_STO", "KICS_A", kicsSwMap);				
+				imStoDcntRateBuA.stream().forEach(s -> session.save(s));
 				
 				session.flush();
 				session.clear();
@@ -2501,13 +2506,18 @@ public class Main {
 					log.info("[{}] has been Deleted in Job:[{}] [BASE_YYMM: {}, COUNT: {}]", Process.toPhysicalName(IrDcntSceIm.class.getSimpleName()), jobLog.getJobId(), bssd, delNum);
 					
 	
-					List<IrDcntSceIm> imDetDcntSceDet = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_IM", "KICS", kicsSwMap, projectionYear);				
+					List<IrDcntSceIm> imDetDcntSceDet = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_IM", "KICS_L", kicsSwMap, projectionYear);				
 					imDetDcntSceDet.stream().forEach(s -> session.save(s));
 					
+					List<IrDcntSceIm> imDetDcntSceDetA = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_IM", "KICS_A", kicsSwMap, projectionYear);				
+					imDetDcntSceDetA.stream().forEach(s -> session.save(s));
 					
-					// 스프레드 변동성이 너무너무 큼!!! -> 금리커브가 비정상적으로 산출됨. 
-					List<IrDcntSceIm> imDetDcntSceSto = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_STO", "KICS", kicsSwMap, projectionYear);				
+					
+					List<IrDcntSceIm> imDetDcntSceSto = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_STO", "KICS_L", kicsSwMap, projectionYear);				
 					imDetDcntSceSto.stream().forEach(s -> session.save(s));
+					
+					List<IrDcntSceIm> imDetDcntSceStoA = Esg770_ShkScen.createAfnsShockScenario(bssd, "AFNS_STO", "KICS_A", kicsSwMap, projectionYear);				
+					imDetDcntSceStoA.stream().forEach(s -> session.save(s));
 					
 					
 					session.flush();

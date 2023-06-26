@@ -41,7 +41,7 @@ public enum EJob {
 	, ESG730 ("DNS Shock(det.5) Spread")
 	, ESG740 ("DNS Shock(sto.1000) Spread")
 	
-	, ESG760 ("BottomUp Risk Free TermStructure with Liquidity Premium")
+	, ESG760 ("BottomUp Risk Free TermStructure")
 	, ESG770 ("Interpolated TermStructure by SW")
 
 	, ESG810 ("Set Transition Matrix")

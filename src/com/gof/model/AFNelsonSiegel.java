@@ -1040,7 +1040,8 @@ public class AFNelsonSiegel extends IrModel {
 			
 			// 오차항의 난수 생성. [tenor.lengh][scen#]
 			this.randomNumberGaussian(this.tenor.length);
-			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon/100) ;
+//			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon) ;
+			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon/100.0) ;
 
 			stoShock = stoShock.plus(err);
 			
