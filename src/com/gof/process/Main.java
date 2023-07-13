@@ -330,7 +330,7 @@ public class Main {
 //		jobList.add("720");
 //		jobList.add("730");
 //		jobList.add("740");
-//		jobList.add("760");
+		jobList.add("760");
 		jobList.add("770");
 		
 	}		

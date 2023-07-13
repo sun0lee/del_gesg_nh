@@ -35,7 +35,7 @@ public class Esg720_optAfnsParam extends Process {
 		
 		AFNelsonSiegel afns = new AFNelsonSiegel(IrModel.stringToDate(bssd), mode, null, curveHisList, curveBaseList,
                 true, 'D', dt, initSigma, DCB_MON_DIF, ltfr, 0, (int) ltfrT, 0.0, 1.0 / 12, 
-                0.05, 2.0, 3, prjYear, errorTolerance, itrMax, confInterval, epsilon);
+                0.05, 2.0, 3, prjYear, errorTolerance, itrMax, confInterval, epsilon); //errorTolerance
 		
 		// 모수 최적화
 		afns.optimizationParas(initParam);

@@ -541,7 +541,7 @@ public class AFNelsonSiegel extends IrModel {
 		this.initParas[10] = this.sigmaLC;            
 		this.initParas[11] = this.sigmaSC; 
 		this.initParas[12] = this.sigmaC;
-		this.initParas[13] = this.epsilon * 1000;
+		this.initParas[13] = this.epsilon ; // *1000 주석 엑셀과 모수가 동일하도록 수정 
 	}	
 	
 
@@ -584,10 +584,12 @@ public class AFNelsonSiegel extends IrModel {
 				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();	
 
 // 23.066 13 epsilone 은 초기값 1로 설정 	
-//		int elementCnt = this.iRateHis.length * this.tenor.length;
-//		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
+		int elementCnt = this.iRateHis.length * this.tenor.length;
+		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
 		
 		log.info("find initialLamda:{}, residual Sum Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
+		log.info("find epsilon:{}", this.epsilon  ) ;
+		log.info("find excel epsilon:{}", this.epsilon*100  ) ;
 	}
 	
 	
@@ -760,7 +762,7 @@ public class AFNelsonSiegel extends IrModel {
 				
 				SimplexOptimizer optimizer = new SimplexOptimizer(1e-12, 1e-12); //1e-12
 				AbstractSimplex  ndsimplex = new NelderMeadSimplex(nelderMeadStep(calibParas, 0.001));
-				PointValuePair   result    = optimizer.optimize(new MaxEval(100000) // 100000
+				PointValuePair   result    = optimizer.optimize(new MaxEval(100000) // 100,000
 //						                                      , new ObjectiveFunction(fp)
 						                                      , new ObjectiveFunction(fpConstr)
 						                                      , ndsimplex
@@ -813,9 +815,9 @@ public class AFNelsonSiegel extends IrModel {
 		SimpleMatrix Sigma  = new SimpleMatrix(toLowerTriangular3(new double[] {paras[7], paras[8], paras[9], paras[10], paras[11], paras[12]}));				
 		
 //		SimpleMatrix H      = new SimpleMatrix(toDiagMatrix(paras[13] * 1, this.tenor.length));
-//		SimpleMatrix H      = new SimpleMatrix(toDiagMatrix(Math.pow((paras[13] * 1), 2), this.tenor.length));
+		SimpleMatrix H      = new SimpleMatrix(toDiagMatrix(Math.pow((paras[13] * 1), 2), this.tenor.length));
 		
-		SimpleMatrix H      = new SimpleMatrix(toDiagMatrix(Math.pow((paras[13] * 0.001), 2), this.tenor.length));
+//		SimpleMatrix H      = new SimpleMatrix(toDiagMatrix(Math.pow((paras[13] * 0.001), 2), this.tenor.length));
 		SimpleMatrix B      = new SimpleMatrix(factorLoad(Lambda, this.tenor, true));		
 		SimpleMatrix C      = new SimpleMatrix(vecToMat(afnsC(Sigma, Lambda, this.tenor)));
 		
@@ -872,7 +874,7 @@ public class AFNelsonSiegel extends IrModel {
 			// Log-Likelihood function
 			logLike           += - 0.5 * this.tenor.length * Math.log(2 * Math.PI) - 0.5 * Math.log(Ev.determinant()) - 0.5 * Er.transpose().mult(Evinv).dot(Er);
 			
-//			log.info("String : {},{},{}" ,i, logLike, Yimp) ; 
+//			log.info("String :i={},logLike={},Yimp:{}" ,i, logLike, Yimp) ; 
 			this.coeffLt[i] = PrevX.get(0,0);  this.coeffSt[i] = PrevX.get(1,0);  this.coeffCt[i] = PrevX.get(2,0);
 		}		
 		return -logLike;
@@ -1040,8 +1042,8 @@ public class AFNelsonSiegel extends IrModel {
 			
 			// 오차항의 난수 생성. [tenor.lengh][scen#]
 			this.randomNumberGaussian(this.tenor.length);
-//			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon) ;
-			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon/100.0) ;
+			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon) ;
+//			SimpleMatrix err  = new SimpleMatrix(this.randNum).scale(this.epsilon/100.0) ;
 
 			stoShock = stoShock.plus(err);
 			
