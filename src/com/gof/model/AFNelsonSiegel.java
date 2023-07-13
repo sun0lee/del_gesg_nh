@@ -583,7 +583,7 @@ public class AFNelsonSiegel extends IrModel {
 				                       , GoalType.MINIMIZE
 				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();	
 
-// 23.066 13 epsilone 은 초기값 1로 설정 	
+// 23.06 13 epsilone 은 초기값 1로 설정 -> 23.07.13 엑셀과 동일하게 수정 	
 		int elementCnt = this.iRateHis.length * this.tenor.length;
 		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
 		
@@ -749,7 +749,7 @@ public class AFNelsonSiegel extends IrModel {
 				fpLower[i] = 0.0;
 				fpUpper[i] = 1000000;				
 			}			
-			fpScale[i] = 1000;
+			fpScale[i] = 1;
 		}		
 	    MultivariateFunctionPenaltyAdapter fpConstr = new MultivariateFunctionPenaltyAdapter(fp, fpLower, fpUpper, 1000, fpScale);
 		
