@@ -531,16 +531,23 @@ public class AFNelsonSiegel extends IrModel {
 		this.initParas[4]  = Math.max(this.kappaL, 1e-4); 
 		this.initParas[5]  = Math.max(this.kappaS, 1e-4);		
 		this.initParas[6]  = Math.max(this.kappaC, 1e-4);		
-//		this.initParas[7]  = this.initSigma; this.initParas[8]  = 0.0; this.initParas[9]  = this.initSigma;
-//		this.initParas[10] = 0.0;            this.initParas[11] = 0.0; this.initParas[12] = this.initSigma;
-
-		// 23.06.09 init sigma add 
-		this.initParas[7]  = this.sigmaL; 
-		this.initParas[8]  = this.sigmaLS; 
-		this.initParas[9]  = this.sigmaS;
-		this.initParas[10] = this.sigmaLC;            
-		this.initParas[11] = this.sigmaSC; 
-		this.initParas[12] = this.sigmaC;
+		
+		// 23.07.17 내부모형일 경우 초기모수 설정 
+		if (mode.toUpperCase().equals("AFNS")) {
+		    this.initParas[7] = this.initSigma;
+		    this.initParas[8] = 0.0;
+		    this.initParas[9] = this.initSigma;
+		    this.initParas[10] = 0.0;
+		    this.initParas[11] = 0.0;
+		    this.initParas[12] = this.initSigma;
+		} else {
+		    this.initParas[7] = this.sigmaL;
+		    this.initParas[8] = this.sigmaLS;
+		    this.initParas[9] = this.sigmaS;
+		    this.initParas[10] = this.sigmaLC;
+		    this.initParas[11] = this.sigmaSC;
+		    this.initParas[12] = this.sigmaC;
+		}		
 		this.initParas[13] = this.epsilon ; // *1000 주석 엑셀과 모수가 동일하도록 수정 
 	}	
 	
@@ -583,9 +590,9 @@ public class AFNelsonSiegel extends IrModel {
 				                       , GoalType.MINIMIZE
 				                       , new SearchInterval(this.minLambda, this.maxLambda)).getPoint();	
 
-// 23.06 13 epsilone 은 초기값 1로 설정 -> 23.07.13 엑셀과 동일하게 수정 	
-		int elementCnt = this.iRateHis.length * this.tenor.length;
-		this.epsilon = Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
+// 23.06 13 epsilone 은 초기값 1로 설정 -> 23.07.17 내부모형 (DNS) 일 때만 초기값 지정 
+		 int elementCnt = this.iRateHis.length * this.tenor.length;
+		 this.epsilon =  mode.toUpperCase().equals("AFNS") ? this.epsilon : Math.sqrt(residualSumOfSquares(this.lambda)/ elementCnt );
 		
 		log.info("find initialLamda:{}, residual Sum Of Squares : {}", this.lambda, residualSumOfSquares(this.lambda));
 		log.info("find epsilon:{}", this.epsilon  ) ;
