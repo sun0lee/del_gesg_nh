@@ -306,7 +306,7 @@ public class Main {
 			System.exit(0);
 		}
 		
-		jobList.clear();
+//		jobList.clear();
 //		jobList.add("151");
 //		jobList.add("210");
 //		jobList.add("220");
@@ -330,8 +330,10 @@ public class Main {
 //		jobList.add("720");
 //		jobList.add("730");
 //		jobList.add("740");
-		jobList.add("760");
-		jobList.add("770");
+//		jobList.add("760");
+//		jobList.add("770");
+//		jobList.add("810");
+//		jobList.add("820");
 		
 	}		
 	
@@ -2543,7 +2545,9 @@ public class Main {
 				int delNum = session.createQuery("delete RcCorpTm a where a.baseYymm = :param").setParameter("param", bssd).executeUpdate();	
 				log.info("[{}] has been Deleted in Job:[{}] [BASE_YYMM: {}, COUNT: {}]", Process.toPhysicalName(RcCorpTm.class.getSimpleName()), jobLog.getJobId(), bssd, delNum);				
 				
-				List<String> agencyCd = RcCorpPdDao.getAgencyCdUsr(bssd);
+				List<String> agencyCd = RcCorpPdDao.getAgencyCdUsr(bssd); 
+				// 평가기관 리스트 
+				
 				log.info("Credit Rating Agency: {}", agencyCd);
 				
 				for(String agency : agencyCd) {
@@ -2583,7 +2587,8 @@ public class Main {
 					List<RcCorpPd> rcCorpPdList = Esg820_RcCorpPd.createRcCorpPd(bssd, agency, projectionYear);				
 					rcCorpPdList.stream().forEach(s -> session.save(s));
 					
-					if(!agency.equals("NICE")) continue;
+//					if(!agency.equals("NICE")) continue;
+					if(!agency.equals("S&P")) continue;
 					
 					List<RcCorpPdBiz> rcCorpPdBizKicsList = Esg820_RcCorpPd.createRcCorpPdBiz(bssd, "KICS", agency, rcCorpPdList);
 					rcCorpPdBizKicsList.stream().forEach(s -> session.save(s));
